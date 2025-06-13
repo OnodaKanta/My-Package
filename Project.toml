@@ -1,0 +1,10 @@
+name = "MyPackage"
+uuid = "13c5e979-f660-48f0-84c3-e3d33e0daa6e"
+authors = ["Onoda <onoda.k.829@ms.saitama-u.ac.jp>"]
+version = "0.1.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
