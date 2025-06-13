@@ -1,8 +1,8 @@
-using timeprop
-import timeprop: perform_timeprop
+using MyPackage
+import MyPackage: perform_MyPackage
 using Test
 
-@testset "timeprop.jl" begin
+@testset "MyPackage.jl" begin
     # 等速度運動のテスト
     @testset "Uniform motion" begin
         # 加速度が0の等速度運動
@@ -12,7 +12,7 @@ using Test
         a0 = 1.0  # 初期速度
         h = 1e-3   # 時間ステップ
 
-        x_final, a_final = perform_timeprop(F, tmax, x0, a0, h)
+        x_final, a_final = perform_MyPackage(F, tmax, x0, a0, h)
         
         # 理論値: x = x0 + v0*t
         expected_x = x0 + a0 * tmax
@@ -31,7 +31,7 @@ using Test
         a0 = 0.0  # 初期速度
         h = 1e-4   # 時間ステップ
 
-        x_final, a_final = perform_timeprop(F, tmax, x0, a0, h)
+        x_final, a_final = perform_MyPackage(F, tmax, x0, a0, h)
         
         # 理論値: x = x0 + v0*t + (1/2)*a*t^2
         # 理論値: v = v0 + a*t
@@ -54,7 +54,7 @@ using Test
         a0 = 0.0   # 初期速度
         h = 1e-4   # 時間ステップ
 
-        x_final, a_final = perform_timeprop(F, tmax, x0, a0, h)
+        x_final, a_final = perform_MyPackage(F, tmax, x0, a0, h)
         
         # 理論値: x = x0 * cos(ωt), ここでω = √k
         # 理論値: v = -x0 * ω * sin(ωt)
