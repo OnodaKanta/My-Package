@@ -1,47 +1,66 @@
 module MyPackage
 
-export perform_MyPackage
+using LinearAlgebra # ベクトル演算のために必要
 
 """
-perform_MyPackage(F, tmax, x0, a0, h)
+perform_MyPackage(F, tmax, x0, v0, h)
 
-数値的に時間発展を行い、時刻、位置、速度の配列を返します。
+2階常微分方程式を4次のルンゲ＝クッタ法（RK4）で数値的に解く関数。
 
 # 引数
-- `F::Function`: (x, t) -> 加速度を返す関数
-- `tmax::Float64`: シミュレーションの終了時刻 (> 0)
-- `x0::Float64`: 初期位置
-- `a0::Float64`: 初期速度
-- `h::Float64`: 時間ステップ幅 (> 0)
+- `F`: 力の関数。`F(x, v, t)` の形式で、加速度を返す関数。
+- `tmax`: シミュレーションの最大時間。
+- `x0`: 初期位置。
+- `v0`: 初期速度。
+- `h`: 時間ステップサイズ。
 
-# 返り値
-- `(t, x, a)`:
-  - `t::Vector{Float64}`: 0 から tmax までの時刻配列
-  - `x::Vector{Float64}`: 各時刻での位置
-  - `a::Vector{Float64}`: 各時刻での速度
+# 戻り値
+- `x_final`: `tmax` における最終位置。
+- `v_final`: `tmax` における最終速度。
 """
-function perform_MyPackage(F::Function, tmax::Float64, x0::Float64, a0::Float64, h::Float64)
-    # 入力チェック
-    @assert tmax > 0 "tmax must be positive"
-    @assert h > 0 "h must be positive"
+function perform_MyPackage(F, tmax, x0, v0, h)
+    t = 0.0
+    x = x0
+    v = v0
 
-    # ステップ数および配列の準備
-    N = Int(floor(tmax / h)) + 1
-    t = range(0.0, length=N, step=h)
-    x = Vector{Float64}(undef, N)
-    a = Vector{Float64}(undef, N)
-
-    # 初期条件
-    x[1] = x0
-    a[1] = a0
-
-    # 時間発展ループ
-    for i in 1:N-1
-        a[i+1] = a[i] + h * F(x[i], t[i])
-        x[i+1] = x[i] + h * a[i+1]
+    # 2階ODEを1階連立ODEに変換する関数
+    # 状態ベクトル Y = [x, v]
+    # Y' = [v, F(x,v,t)]
+    # ここで F(x,v,t) は加速度 (d^2x/dt^2)
+    function f_system(Y, t_current)
+        current_x, current_v = Y[1], Y[2]
+        acceleration = F(current_x, current_v, t_current)
+        return [current_v, acceleration] # [dx/dt, dv/dt]
     end
 
-    return t, x, a
+    # シミュレーションループ
+    while t < tmax
+        # 現在の時間ステップで tmax を超えないように調整
+        dt_actual = min(h, tmax - t)
+
+        # RK4法の計算ステップ
+        # k1 = f(Y_n, t_n)
+        k1 = f_system([x, v], t)
+
+        # k2 = f(Y_n + (dt_actual/2)k1, t_n + dt_actual/2)
+        # ベクトル Y_n + (dt_actual/2)k1 を計算するために LinearAlgebra の + や * が便利
+        k2 = f_system([x + (dt_actual/2) * k1[1], v + (dt_actual/2) * k1[2]], t + dt_actual/2)
+
+        # k3 = f(Y_n + (dt_actual/2)k2, t_n + dt_actual/2)
+        k3 = f_system([x + (dt_actual/2) * k2[1], v + (dt_actual/2) * k2[2]], t + dt_actual/2)
+
+        # k4 = f(Y_n + dt_actual*k3, t_n + dt_actual)
+        k4 = f_system([x + dt_actual * k3[1], v + dt_actual * k3[2]], t + dt_actual)
+
+        # 次の時間ステップの状態を更新
+        # Y_{n+1} = Y_n + (dt_actual/6) * (k1 + 2k2 + 2k3 + k4)
+        x += (dt_actual/6) * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1])
+        v += (dt_actual/6) * (k1[2] + 2*k2[2] + 2*k3[2] + k4[2])
+        
+        t += dt_actual
+    end
+
+    return x, v
 end
 
-end  # module
+end # module MyPackage
